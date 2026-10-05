@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - SANAD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20 flex-shrink-0">
+        <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+            <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-shield-halved text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide">SANAD</h1>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest">Panel Ustadz</p>
+            </div>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-500 mb-3 px-2">MENU UTAMA</p>
+            <button onclick="switchTab('tab-aduan', this)" class="menu-btn w-full flex items-center gap-3 bg-emerald-600 text-white px-4 py-3 rounded-xl transition text-left">
+                <i class="fa-solid fa-inbox w-5"></i>
+                <span class="font-medium text-sm">Pusat Aduan</span>
+            </button>
+            <button onclick="switchTab('tab-peta', this)" class="menu-btn w-full flex items-center gap-3 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl transition text-left">
+                <i class="fa-solid fa-map-location-dot w-5"></i>
+                <span class="font-medium text-sm">Peta Kerawanan</span>
+            </button>
+            <button onclick="switchTab('tab-statistik', this)" class="menu-btn w-full flex items-center gap-3 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl transition text-left">
+                <i class="fa-solid fa-chart-pie w-5"></i>
+                <span class="font-medium text-sm">Statistik Laporan</span>
+            </button>
+            
+            <p class="text-xs font-semibold text-slate-500 mt-6 mb-3 px-2">PENGATURAN</p>
+            <button onclick="switchTab('tab-pengaturan', this)" class="menu-btn w-full flex items-center gap-3 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl transition text-left">
+                <i class="fa-solid fa-gear w-5"></i>
+                <span class="font-medium text-sm">Pengaturan Sistem</span>
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-800">
+            <button onclick="alert('Sesi admin ditutup.')" class="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white px-4 py-2.5 rounded-lg transition text-sm font-semibold">
+                <i class="fa-solid fa-right-from-bracket"></i> Keluar
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="bg-white px-8 py-4 shadow-sm border-b border-slate-200 flex justify-between items-center z-10 flex-shrink-0">
+            <h2 class="font-bold text-xl text-slate-800" id="header-title">Pusat Resolusi Aduan</h2>
+            <div class="flex items-center gap-4 text-sm font-semibold text-slate-600">
+                <div class="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
+                    <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>
+                    Koneksi Realtime Aktif
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 flex-1 overflow-y-auto flex flex-col relative w-full h-full">
+            
+            <!-- TABS 1: PUSAT ADUAN (CHAT) -->
+            <div id="tab-aduan" class="tab-content active h-full flex flex-col lg:flex-row gap-6">
+                <!-- Inbox List -->
+                <div class="w-full lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 class="font-bold text-slate-800 text-sm">Inbox Laporan (PIN)</h3>
+                        <i class="fa-solid fa-arrows-rotate text-slate-400 text-xs"></i>
+                    </div>
+                    <div id="admin-laporan-list" class="flex-1 overflow-y-auto divide-y divide-slate-100">
+                        <div class="p-8 text-center text-slate-400 text-sm">Memuat data sinkronisasi...</div>
+                    </div>
+                </div>
+
+                <!-- Chat Room -->
+                <div class="w-full lg:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden relative">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-4 shadow-sm z-10">
+                        <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-user-secret"></i></div>
+                        <div>
+                            <h3 class="font-bold text-slate-800" id="admin-chat-title">Pilih Aduan Santri</h3>
+                            <p class="text-xs text-slate-500" id="admin-chat-subtitle">Pilih PIN di sebelah kiri.</p>
+                        </div>
+                    </div>
+                    <div id="admin-chat-box" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col bg-[#efeae2]">
+                        <div class="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60">
+                            <i class="fa-regular fa-comments text-6xl mb-3"></i>
+                            <p class="text-sm">Ruang Balas Ustadz</p>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-white border-t border-slate-200 flex gap-2 items-center">
+                        <textarea id="admin-input-reply" rows="1" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-[14.5px] outline-none focus:border-emerald-500 resize-none max-h-24 shadow-inner" placeholder="Ketik nasihat/balasan..." disabled></textarea>
+                        <button onclick="kirimBalasanAdmin()" id="admin-btn-send" class="bg-emerald-600 hover:bg-emerald-700 text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold transition shadow-md disabled:opacity-50 flex-shrink-0" disabled>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS 2: PETA KERAWANAN -->
+            <div id="tab-peta" class="tab-content h-full">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-full flex flex-col">
+                    <div class="mb-4">
+                        <h3 class="font-bold text-slate-800 text-lg">Peta Evaluasi Keamanan Pondok</h3>
+                        <p class="text-sm text-slate-500">Visualisasi titik lokasi yang paling sering dilaporkan dalam 30 hari terakhir.</p>
+                    </div>
+                    <div class="w-full flex-1 bg-slate-100 rounded-xl relative overflow-hidden border border-slate-300">
+                        <!-- Pola Denah (Grid) -->
+                        <div class="absolute inset-0 opacity-40" style="background-image: linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px); background-size: 40px 40px;"></div>
+                        
+                        <!-- Heatmap Nodes / Area Rawan -->
+                        <div class="absolute top-[30%] left-[25%] flex flex-col items-center cursor-pointer hover:scale-110 transition">
+                            <div class="w-20 h-20 bg-rose-500/30 rounded-full flex items-center justify-center animate-pulse">
+                                <div class="w-6 h-6 bg-rose-600 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.9)] flex items-center justify-center text-white text-[10px] font-bold">12</div>
+                            </div>
+                            <span class="bg-white text-rose-700 text-xs font-bold px-2 py-1 rounded shadow mt-1">Asrama C (Tinggi)</span>
+                        </div>
+
+                        <div class="absolute bottom-[20%] right-[30%] flex flex-col items-center cursor-pointer hover:scale-110 transition">
+                            <div class="w-16 h-16 bg-amber-500/30 rounded-full flex items-center justify-center">
+                                <div class="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">5</div>
+                            </div>
+                            <span class="bg-white text-amber-700 text-xs font-bold px-2 py-1 rounded shadow mt-1">Kantin Depan (Sedang)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS 3: STATISTIK -->
+            <div id="tab-statistik" class="tab-content h-full gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
+                        <p class="text-sm text-slate-500 font-bold uppercase">Total Laporan Aktif</p>
+                        <h2 class="text-4xl font-bold text-slate-800 mt-2">24</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
+                        <p class="text-sm text-slate-500 font-bold uppercase">Selesai Ditangani</p>
+                        <h2 class="text-4xl font-bold text-emerald-600 mt-2">89</h2>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
+                        <p class="text-sm text-slate-500 font-bold uppercase">Urgensi Tinggi</p>
+                        <h2 class="text-4xl font-bold text-rose-600 mt-2">3</h2>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col items-center justify-center">
+                    <h3 class="font-bold text-slate-700 mb-4 w-full text-left">Grafik Kategori Masalah</h3>
+                    <div class="relative w-full max-w-md aspect-square">
+                        <canvas id="statChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS 4: PENGATURAN -->
+            <div id="tab-pengaturan" class="tab-content h-full">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-lg mb-6">Pengaturan Sistem Dasar</h3>
+                    <div class="space-y-4 max-w-lg">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Ustadz Pendamping</label>
+                            <input type="text" class="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" value="Ustadz Ahmad">
+                        </div>
+                        <div class="flex items-center justify-between border-b pb-4 mt-6">
+                            <div>
+                                <h4 class="font-bold text-slate-700 text-sm">Notifikasi Suara</h4>
+                                <p class="text-xs text-slate-500">Bunyikan nada saat aduan baru masuk</p>
+                            </div>
+                            <input type="checkbox" checked class="w-5 h-5 text-emerald-600">
+                        </div>
+                        <button onclick="alert('Pengaturan disimpan')" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold mt-4 shadow-sm hover:bg-emerald-700 transition">Simpan Perubahan</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ================= SCRIPT & FIREBASE ================= -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // HARUS ADA databaseURL KARENA SERVER ASIA
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvehn92P42G76FyXQ0YnYSL9IKBghM-B8",
+            authDomain: "sanad-162000.firebaseapp.com",
+            databaseURL: "https://sanad-162000-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "sanad-162000",
+            storageBucket: "sanad-162000.firebasestorage.app",
+            messagingSenderId: "856895240376",
+            appId: "1:856895240376:web:5600defe847009d20bdc4d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Sistem Navigasi Tab Admin
+        window.switchTab = (tabId, element) => {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.menu-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white');
+                btn.classList.add('text-slate-300');
+            });
+            
+            element.classList.remove('text-slate-300');
+            element.classList.add('bg-emerald-600', 'text-white');
+
+            const titles = {
+                'tab-aduan': 'Pusat Resolusi Aduan',
+                'tab-peta': 'Peta Kerawanan Lokasi',
+                'tab-statistik': 'Statistik & Analisis',
+                'tab-pengaturan': 'Pengaturan Sistem'
+            };
+            document.getElementById('header-title').innerText = titles[tabId];
+
+            if(tabId === 'tab-statistik') renderChart();
+        };
+
+        function renderChart() {
+            if(window.myChart) return; // Render sekali saja
+            const ctx = document.getElementById('statChart').getContext('2d');
+            window.myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Perundungan', 'Stres Akademik', 'Fasilitas & Kesehatan', 'Lainnya'],
+                    datasets: [{
+                        data: [12, 7, 4, 3],
+                        backgroundColor: ['#f43f5e', '#f59e0b', '#3b82f6', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // Sistem Sinkronisasi Chat Admin
+        let aktifAdminPIN = null;
+        const listEl = document.getElementById('admin-laporan-list');
+        const box = document.getElementById('admin-chat-box');
+        const input = document.getElementById('admin-input-reply');
+        const btn = document.getElementById('admin-btn-send');
+
+        function formatTime(timestamp) {
+            const d = new Date(timestamp || Date.now());
+            return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        // Ambil Data Laporan (Realtime)
+        onValue(ref(db, 'laporan'), (snapshot) => {
+            listEl.innerHTML = '';
+            if (!snapshot.exists()) {
+                listEl.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm">Belum ada aduan masuk.</div>';
+                return;
+            }
+
+            // Loop database & tampilkan daftar PIN
+            snapshot.forEach((childSnap) => {
+                const pin = childSnap.key;
+                let lastText = "";
+                let lastSender = "";
+                
+                childSnap.child('pesan').forEach((msgSnap) => {
+                    lastText = msgSnap.val().text;
+                    lastSender = msgSnap.val().sender;
+                });
+
+                const isUnread = lastSender === 'user';
+                const preview = lastText.length > 25 ? lastText.substring(0, 25) + "..." : lastText;
+
+                const item = document.createElement('div');
+                item.className = `p-4 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition ${isUnread ? 'bg-amber-50 border-l-4 border-l-amber-500' : ''} ${aktifAdminPIN === pin ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : ''}`;
+                item.innerHTML = `
+                    <div class="flex-1">
+                        <span class="font-mono font-bold text-slate-800 text-sm block">${pin}</span>
+                        <span class="text-[11px] text-slate-500 italic block mt-0.5">"${preview}"</span>
+                    </div>
+                    ${isUnread ? '<span class="w-2.5 h-2.5 bg-amber-500 rounded-full shadow-sm ml-2"></span>' : ''}
+                `;
+                item.onclick = () => bukaChatAdmin(pin);
+                listEl.insertBefore(item, listEl.firstChild); // Yang terbaru di atas
+            });
+        });
+
+        window.bukaChatAdmin = (pin) => {
+            aktifAdminPIN = pin;
+            document.getElementById('admin-chat-title').innerText = `Santri (${pin})`;
+            document.getElementById('admin-chat-subtitle').innerText = "Privasi Terjaga. Balas dengan santun.";
+            input.disabled = false;
+            btn.disabled = false;
+            
+            // Reload daftar kiri untuk hapus warna "Aktif" sebelumnya dan pasang yang baru
+            document.querySelectorAll('#admin-laporan-list > div').forEach(el => el.classList.remove('bg-indigo-50', 'border-l-indigo-500', 'border-l-4'));
+
+            onValue(ref(db, `laporan/${pin}/pesan`), (snap) => {
+                box.innerHTML = '';
+                if (!snap.exists()) return;
+
+                snap.forEach((m) => {
+                    const val = m.val();
+                    const div = document.createElement('div');
+                    
+                    // Admin UI: 'user' kiri (putih), 'admin' kanan (hijau)
+                    div.className = val.sender === 'user' ? "flex justify-start" : "flex justify-end";
+                    let bubbleClass = "p-2 px-3 shadow-sm max-w-[80%] ";
+                    
+                    if (val.sender === 'user') {
+                        bubbleClass += "bg-white text-gray-800 rounded-lg rounded-tl-none border border-slate-200";
+                    } else if (val.sender === 'admin') {
+                        bubbleClass += "bg-[#d9fdd3] text-gray-800 rounded-lg rounded-tr-none";
+                    } else {
+                        div.className = "flex justify-center";
+                        bubbleClass = "bg-[#e1f3fb] text-slate-600 text-[11px] px-3 py-1 rounded-lg text-center max-w-[80%] border border-[#cce8f4]";
+                    }
+
+                    div.innerHTML = `
+                        <div class="${bubbleClass}">
+                            <p class="text-[14.5px] leading-snug whitespace-pre-wrap">${val.text}</p>
+                            ${val.sender !== 'bot' ? `<div class="text-right mt-1"><span class="text-[10px] text-gray-500">${formatTime(val.timestamp)}</span></div>` : ''}
+                        </div>
+                    `;
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight; // Auto scroll ke bawah
+            });
+        };
+
+        window.kirimBalasanAdmin = () => {
+            if (!aktifAdminPIN) return;
+            const text = input.value.trim();
+            if (!text) return;
+            
+            push(ref(db, `laporan/${aktifAdminPIN}/pesan`), {
+                sender: 'admin',
+                text: text,
+                timestamp: Date.now()
+            });
+            input.value = '';
+            input.focus();
+        };
+
+        document.getElementById('admin-input-reply').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); kirimBalasanAdmin(); }
+        });
+    </script>
+</body>
+</html>
