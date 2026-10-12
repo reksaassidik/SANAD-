@@ -3,184 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - SANAD</title>
+    <title>Dashboard Admin AI - SANAD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: flex; flex-direction: column; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ================= CSS 3D ISOMETRIC MAP INTERAKTIF ================= */
+        .map-wrapper { 
+            perspective: 1500px; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 500px; overflow: hidden; 
+            cursor: grab; 
+            background: radial-gradient(circle at center, #1e293b, #0f172a);
+        }
+        .map-wrapper:active { cursor: grabbing; }
+        
+        .map-3d {
+            width: 600px; height: 600px;
+            background-color: #334155;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 2px, transparent 2px);
+            background-size: 40px 40px;
+            transform: rotateX(60deg) rotateZ(-45deg);
+            transform-style: preserve-3d;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+            border: 4px solid #475569;
+            position: relative;
+            transition: transform 0.1s ease-out;
+        }
+
+        .bldg {
+            position: absolute; 
+            background: #64748b; 
+            transform: translateZ(30px); 
+            transform-style: preserve-3d;
+            border: 1px solid #94a3b8;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .bldg::before {
+            content: ''; position: absolute; top: 0; left: 100%; width: 30px; height: 100%;
+            background: #475569; transform-origin: left; transform: rotateY(90deg);
+            border-bottom: 1px solid #334155;
+        }
+        .bldg::after {
+            content: ''; position: absolute; top: 100%; left: 0; width: 100%; height: 30px;
+            background: #334155; transform-origin: top; transform: rotateX(-90deg);
+            border-right: 1px solid #1e293b;
+        }
+        .bldg span {
+            color: white; font-size: 10px; font-weight: bold; opacity: 0.8;
+            transform: rotateZ(90deg); 
+        }
+        .bldg.masjid { background: #0ea5e9; border-color: #7dd3fc; }
+        .bldg.masjid::before { background: #0284c7; }
+        .bldg.masjid::after { background: #0369a1; }
+        .kubah {
+            position: absolute; w-16; h-16;
+            background: radial-gradient(circle at 30% 30%, #bae6fd, #38bdf8);
+            border-radius: 50%;
+            transform: translateZ(15px);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        }
+        .hotspot {
+            position: absolute; transform-style: preserve-3d;
+            transform: translateZ(40px) rotateX(-90deg) rotateY(45deg); 
+            display: flex; flex-direction: column; align-items: center;
+            pointer-events: none; 
+        }
+        .radar-ping {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(225, 29, 72, 0.5);
+            animation: ping 2s infinite cubic-bezier(0, 0, 0.2, 1);
+            position: absolute; top: -15px; left: -15px;
+        }
+        @keyframes ping { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body class="h-screen w-screen flex overflow-hidden">
+
+    <!-- ================= LOGIN SCREEN ================= -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center transform transition-all hover:scale-105">
+            <div class="w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <i class="fa-solid fa-microchip text-4xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Admin SANAD AI</h2>
+            <p class="text-xs text-slate-500 mb-6 mt-1 font-medium">Dashboard Analisis Kecerdasan Buatan</p>
+            
+            <input type="password" id="login-password" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-center mb-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 outline-none transition" placeholder="Password: admin123">
+            <button onclick="login()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition shadow-lg">Login Sistem</button>
+            <p id="login-error" class="text-rose-500 text-xs mt-3 hidden font-bold animate-bounce">Password salah!</p>
+        </div>
+    </div>
 
     <!-- ================= SIDEBAR ================= -->
-    <aside class="w-64 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20 flex-shrink-0">
-        <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-            <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white shadow-lg">
-                <i class="fa-solid fa-shield-halved text-xl"></i>
+    <aside class="w-20 lg:w-64 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20 flex-shrink-0 transition-all duration-300">
+        <div class="p-4 lg:p-6 border-b border-slate-800 flex items-center justify-center lg:justify-start gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-lg flex items-center justify-center text-white shadow-lg flex-shrink-0">
+                <i class="fa-solid fa-microchip text-xl"></i>
             </div>
-            <div>
-                <h1 class="font-bold text-lg leading-tight tracking-wide">SANAD</h1>
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest">Panel Ustadz</p>
+            <div class="hidden lg:block">
+                <h1 class="font-bold text-lg leading-tight tracking-wide">SANAD AI</h1>
+                <p class="text-[9px] text-emerald-400 uppercase tracking-widest font-bold">Smart Admin</p>
             </div>
         </div>
         
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <p class="text-xs font-semibold text-slate-500 mb-3 px-2">MENU UTAMA</p>
-            <button onclick="switchTab('tab-aduan', this)" class="menu-btn w-full flex items-center gap-3 bg-emerald-600 text-white px-4 py-3 rounded-xl transition text-left">
-                <i class="fa-solid fa-inbox w-5"></i>
-                <span class="font-medium text-sm">Pusat Aduan</span>
-            </button>
-            <button onclick="switchTab('tab-peta', this)" class="menu-btn w-full flex items-center gap-3 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl transition text-left">
-                <i class="fa-solid fa-map-location-dot w-5"></i>
-                <span class="font-medium text-sm">Peta Kerawanan</span>
-            </button>
-            <button onclick="switchTab('tab-statistik', this)" class="menu-btn w-full flex items-center gap-3 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl transition text-left">
-                <i class="fa-solid fa-chart-pie w-5"></i>
-                <span class="font-medium text-sm">Statistik Laporan</span>
+        <nav class="flex-1 px-2 lg:px-4 py-6 space-y-3 overflow-y-auto">
+            <button onclick="switchTab('tab-aduan', this)" class="menu-btn w-full flex items-center justify-center lg:justify-start gap-3 bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 px-3 lg:px-4 py-3 rounded-xl transition group">
+                <i class="fa-solid fa-inbox text-lg group-hover:scale-110 transition"></i>
+                <span class="font-medium text-sm hidden lg:block">Pusat Aduan & AI</span>
             </button>
             
-            <p class="text-xs font-semibold text-slate-500 mt-6 mb-3 px-2">PENGATURAN</p>
-            <button onclick="switchTab('tab-pengaturan', this)" class="menu-btn w-full flex items-center gap-3 hover:bg-slate-800 text-slate-300 px-4 py-3 rounded-xl transition text-left">
-                <i class="fa-solid fa-gear w-5"></i>
-                <span class="font-medium text-sm">Pengaturan Sistem</span>
+            <button onclick="switchTab('tab-peta', this)" class="menu-btn w-full flex items-center justify-center lg:justify-start gap-3 hover:bg-slate-800 text-slate-400 px-3 lg:px-4 py-3 rounded-xl transition group">
+                <i class="fa-solid fa-cube text-lg group-hover:scale-110 transition"></i>
+                <span class="font-medium text-sm hidden lg:block">Peta 3D Kerawanan</span>
+            </button>
+            
+            <button onclick="switchTab('tab-statistik', this)" class="menu-btn w-full flex items-center justify-center lg:justify-start gap-3 hover:bg-slate-800 text-slate-400 px-3 lg:px-4 py-3 rounded-xl transition group">
+                <i class="fa-solid fa-chart-pie text-lg group-hover:scale-110 transition"></i>
+                <span class="font-medium text-sm hidden lg:block">Statistik Detail</span>
             </button>
         </nav>
         
         <div class="p-4 border-t border-slate-800">
-            <button onclick="alert('Sesi admin ditutup.')" class="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white px-4 py-2.5 rounded-lg transition text-sm font-semibold">
-                <i class="fa-solid fa-right-from-bracket"></i> Keluar
+            <button onclick="location.reload()" class="w-full flex justify-center items-center gap-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white px-4 py-3 rounded-xl transition text-sm font-semibold">
+                <i class="fa-solid fa-power-off"></i> <span class="hidden lg:block">Kunci Sesi</span>
             </button>
         </div>
     </aside>
 
     <!-- ================= MAIN CONTENT ================= -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden">
-        <header class="bg-white px-8 py-4 shadow-sm border-b border-slate-200 flex justify-between items-center z-10 flex-shrink-0">
-            <h2 class="font-bold text-xl text-slate-800" id="header-title">Pusat Resolusi Aduan</h2>
-            <div class="flex items-center gap-4 text-sm font-semibold text-slate-600">
-                <div class="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
-                    <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>
-                    Koneksi Realtime Aktif
+    <main class="flex-1 flex flex-col h-full overflow-hidden w-full">
+        <header class="bg-white px-4 lg:px-8 py-4 shadow-sm border-b border-slate-200 flex justify-between items-center z-10 flex-shrink-0">
+            <h2 class="font-bold text-lg lg:text-xl text-slate-800" id="header-title">Pusat Resolusi Aduan & AI</h2>
+            <div class="flex items-center gap-3">
+                <div class="hidden md:flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full border border-indigo-200 text-xs font-bold">
+                    <i class="fa-solid fa-sparkles"></i> Gemini AI Ready
                 </div>
             </div>
         </header>
 
-        <div class="p-6 flex-1 overflow-y-auto flex flex-col relative w-full h-full">
+        <div class="p-4 lg:p-6 flex-1 overflow-x-hidden overflow-y-auto w-full h-full relative">
             
-            <!-- TABS 1: PUSAT ADUAN (CHAT) -->
-            <div id="tab-aduan" class="tab-content active h-full flex flex-col lg:flex-row gap-6">
-                <!-- Inbox List -->
-                <div class="w-full lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <h3 class="font-bold text-slate-800 text-sm">Inbox Laporan (PIN)</h3>
-                        <i class="fa-solid fa-arrows-rotate text-slate-400 text-xs"></i>
+            <!-- TABS 1: PUSAT ADUAN & AI CHAT -->
+            <div id="tab-aduan" class="tab-content flex h-full flex-col lg:flex-row gap-6 fade-in">
+                <div class="w-full lg:w-80 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[40vh] lg:h-full flex-shrink-0">
+                    <div class="p-4 lg:p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+                        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-users text-emerald-500 mr-2"></i>Daftar Laporan</h3>
                     </div>
-                    <div id="admin-laporan-list" class="flex-1 overflow-y-auto divide-y divide-slate-100">
-                        <div class="p-8 text-center text-slate-400 text-sm">Memuat data sinkronisasi...</div>
+                    <div id="admin-laporan-list" class="flex-1 overflow-y-auto divide-y divide-slate-100 bg-white">
+                        <div class="p-8 text-center text-slate-400 text-sm">Sinkronisasi...</div>
                     </div>
                 </div>
 
-                <!-- Chat Room -->
-                <div class="w-full lg:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden relative">
-                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-4 shadow-sm z-10">
-                        <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-user-secret"></i></div>
-                        <div>
-                            <h3 class="font-bold text-slate-800" id="admin-chat-title">Pilih Aduan Santri</h3>
-                            <p class="text-xs text-slate-500" id="admin-chat-subtitle">Pilih PIN di sebelah kiri.</p>
+                <div class="w-full flex-1 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[60vh] lg:h-full relative min-w-0">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 shadow-sm z-10 rounded-t-3xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-lg"><i class="fa-solid fa-user-secret"></i></div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm" id="admin-chat-title">Pilih Aduan Santri</h3>
+                            </div>
+                        </div>
+                        <button onclick="analisisDenganGemini()" id="btn-ai" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md transition transform active:scale-95 disabled:opacity-50 flex items-center gap-2" disabled>
+                            <i class="fa-solid fa-brain"></i> Analisis Cerdas AI
+                        </button>
+                    </div>
+
+                    <div id="ai-result-panel" class="hidden bg-indigo-50/80 backdrop-blur p-4 border-b border-indigo-100 shadow-inner">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-indigo-800 text-sm"><i class="fa-solid fa-robot mr-1"></i> Gemini AI Analysis</h4>
+                            <button onclick="document.getElementById('ai-result-panel').classList.add('hidden')" class="text-indigo-400 hover:text-indigo-600"><i class="fa-solid fa-times text-lg"></i></button>
+                        </div>
+                        <div id="ai-loading" class="hidden text-xs text-indigo-600 font-bold"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>AI sedang menganalisis percakapan...</div>
+                        <div id="ai-content" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm hidden mt-2">
+                            <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Tingkat Stres & Kategori</p>
+                                <p class="font-bold text-slate-800 text-sm" id="ai-stres">-</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Rekomendasi Solusi Pendekatan</p>
+                                <p class="text-xs text-slate-700 leading-relaxed font-medium" id="ai-saran">-</p>
+                            </div>
                         </div>
                     </div>
-                    <div id="admin-chat-box" class="flex-1 p-6 overflow-y-auto space-y-4 flex flex-col bg-[#efeae2]">
+                    
+                    <div id="admin-chat-box" class="flex-1 p-4 lg:p-6 overflow-y-auto space-y-3 flex flex-col bg-[#efeae2]">
                         <div class="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-60">
-                            <i class="fa-regular fa-comments text-6xl mb-3"></i>
-                            <p class="text-sm">Ruang Balas Ustadz</p>
+                            <i class="fa-regular fa-comments text-5xl mb-3"></i>
+                            <p class="text-sm font-medium">Ruang Balas Ustadz</p>
                         </div>
                     </div>
-                    <div class="p-4 bg-white border-t border-slate-200 flex gap-2 items-center">
-                        <textarea id="admin-input-reply" rows="1" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-[14.5px] outline-none focus:border-emerald-500 resize-none max-h-24 shadow-inner" placeholder="Ketik nasihat/balasan..." disabled></textarea>
-                        <button onclick="kirimBalasanAdmin()" id="admin-btn-send" class="bg-emerald-600 hover:bg-emerald-700 text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold transition shadow-md disabled:opacity-50 flex-shrink-0" disabled>
-                            <i class="fa-solid fa-paper-plane"></i>
+                    
+                    <div class="p-3 bg-slate-100 border-t border-slate-200 flex gap-2 items-center rounded-b-3xl">
+                        <textarea id="admin-input-reply" rows="1" class="flex-1 bg-white border border-slate-300 rounded-2xl px-4 py-3 text-sm outline-none focus:border-emerald-500 resize-none max-h-24" placeholder="Ketik balasan..." disabled></textarea>
+                        <button onclick="kirimBalasanAdmin()" id="admin-btn-send" class="bg-emerald-600 hover:bg-emerald-700 text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-md disabled:opacity-50 flex-shrink-0" disabled>
+                            <i class="fa-solid fa-paper-plane text-lg"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- TABS 2: PETA KERAWANAN -->
-            <div id="tab-peta" class="tab-content h-full">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-full flex flex-col">
-                    <div class="mb-4">
-                        <h3 class="font-bold text-slate-800 text-lg">Peta Evaluasi Keamanan Pondok</h3>
-                        <p class="text-sm text-slate-500">Visualisasi titik lokasi yang paling sering dilaporkan dalam 30 hari terakhir.</p>
-                    </div>
-                    <div class="w-full flex-1 bg-slate-100 rounded-xl relative overflow-hidden border border-slate-300">
-                        <!-- Pola Denah (Grid) -->
-                        <div class="absolute inset-0 opacity-40" style="background-image: linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px); background-size: 40px 40px;"></div>
-                        
-                        <!-- Heatmap Nodes / Area Rawan -->
-                        <div class="absolute top-[30%] left-[25%] flex flex-col items-center cursor-pointer hover:scale-110 transition">
-                            <div class="w-20 h-20 bg-rose-500/30 rounded-full flex items-center justify-center animate-pulse">
-                                <div class="w-6 h-6 bg-rose-600 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.9)] flex items-center justify-center text-white text-[10px] font-bold">12</div>
-                            </div>
-                            <span class="bg-white text-rose-700 text-xs font-bold px-2 py-1 rounded shadow mt-1">Asrama C (Tinggi)</span>
-                        </div>
-
-                        <div class="absolute bottom-[20%] right-[30%] flex flex-col items-center cursor-pointer hover:scale-110 transition">
-                            <div class="w-16 h-16 bg-amber-500/30 rounded-full flex items-center justify-center">
-                                <div class="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">5</div>
-                            </div>
-                            <span class="bg-white text-amber-700 text-xs font-bold px-2 py-1 rounded shadow mt-1">Kantin Depan (Sedang)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TABS 3: STATISTIK -->
-            <div id="tab-statistik" class="tab-content h-full gap-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
-                        <p class="text-sm text-slate-500 font-bold uppercase">Total Laporan Aktif</p>
-                        <h2 class="text-4xl font-bold text-slate-800 mt-2">24</h2>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-                        <p class="text-sm text-slate-500 font-bold uppercase">Selesai Ditangani</p>
-                        <h2 class="text-4xl font-bold text-emerald-600 mt-2">89</h2>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
-                        <p class="text-sm text-slate-500 font-bold uppercase">Urgensi Tinggi</p>
-                        <h2 class="text-4xl font-bold text-rose-600 mt-2">3</h2>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col items-center justify-center">
-                    <h3 class="font-bold text-slate-700 mb-4 w-full text-left">Grafik Kategori Masalah</h3>
-                    <div class="relative w-full max-w-md aspect-square">
-                        <canvas id="statChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TABS 4: PENGATURAN -->
-            <div id="tab-pengaturan" class="tab-content h-full">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-800 text-lg mb-6">Pengaturan Sistem Dasar</h3>
-                    <div class="space-y-4 max-w-lg">
+            <!-- TABS 2: PETA KERAWANAN 3D INTERAKTIF -->
+            <div id="tab-peta" class="tab-content hidden h-full fade-in flex-col">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-2 lg:p-6 h-full flex flex-col">
+                    <div class="mb-4 flex justify-between items-center px-4 pt-2">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Ustadz Pendamping</label>
-                            <input type="text" class="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" value="Ustadz Ahmad">
+                            <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-cube text-indigo-500 mr-2"></i> Peta Wilayah Pesantren 3D</h3>
+                            <p class="text-xs text-slate-500 mt-1">Geser/Drag area peta menggunakan mouse untuk memutar sudut pandang.</p>
                         </div>
-                        <div class="flex items-center justify-between border-b pb-4 mt-6">
-                            <div>
-                                <h4 class="font-bold text-slate-700 text-sm">Notifikasi Suara</h4>
-                                <p class="text-xs text-slate-500">Bunyikan nada saat aduan baru masuk</p>
+                        <div class="flex gap-2">
+                            <span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Titik Perundungan</span>
+                            <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Kerusakan Fasilitas</span>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full flex-1 rounded-2xl overflow-hidden relative map-wrapper" id="map-wrapper">
+                        <div class="map-3d" id="map-3d-scene">
+                            <!-- Gedung -->
+                            <div class="bldg" style="width: 140px; height: 80px; top: 120px; left: 80px;"><span>Asrama A</span></div>
+                            <div class="bldg" style="width: 140px; height: 80px; top: 120px; right: 80px;"><span>Asrama B</span></div>
+                            <div class="bldg masjid" style="width: 120px; height: 120px; bottom: 80px; left: 240px;"><div class="kubah w-16 h-16"></div></div>
+                            <div class="bldg" style="width: 100px; height: 60px; top: 300px; left: 60px; background: #fbbf24; border-color: #f59e0b;"><span>Kantin Utama</span></div>
+
+                            <!-- Hotspot Asrama A (Bully) -->
+                            <div class="hotspot" style="top: 150px; left: 140px;" id="hotspot-bully">
+                                <div class="radar-ping"></div>
+                                <div class="w-6 h-6 bg-rose-600 rounded-full shadow-[0_0_20px_#e11d48] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold z-10" id="map-bully-count">0</div>
+                                <div class="w-1 h-12 bg-gradient-to-b from-rose-600 to-transparent"></div>
+                                <div class="bg-slate-800 text-white text-[9px] px-2 py-1 rounded mt-1 font-bold">Rawan Perundungan</div>
                             </div>
-                            <input type="checkbox" checked class="w-5 h-5 text-emerald-600">
+
+                            <!-- Hotspot Kantin (Fasilitas) -->
+                            <div class="hotspot" style="top: 310px; left: 100px;" id="hotspot-fasilitas">
+                                <div class="radar-ping" style="background: rgba(245, 158, 11, 0.5); animation-delay: 1s;"></div>
+                                <div class="w-6 h-6 bg-amber-500 rounded-full shadow-[0_0_20px_#f59e0b] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold z-10" id="map-fasilitas-count">0</div>
+                                <div class="w-1 h-10 bg-gradient-to-b from-amber-500 to-transparent"></div>
+                                <div class="bg-slate-800 text-white text-[9px] px-2 py-1 rounded mt-1 font-bold">Laporan Fasilitas</div>
+                            </div>
                         </div>
-                        <button onclick="alert('Pengaturan disimpan')" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold mt-4 shadow-sm hover:bg-emerald-700 transition">Simpan Perubahan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS 3: STATISTIK DETAIL -->
+            <div id="tab-statistik" class="tab-content hidden h-full flex-col gap-6 fade-in overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Aduan Masuk</p>
+                        <h2 class="text-3xl font-black text-slate-800 mt-1" id="stat-total">0</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Telah Direspons</p>
+                        <h2 class="text-3xl font-black text-emerald-600 mt-1" id="stat-respons">0</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-rose-500">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Indikasi Stres / Bully</p>
+                        <h2 class="text-3xl font-black text-rose-600 mt-1" id="stat-urgen">0</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Analisis Cerdas (AI)</p>
+                        <h2 class="text-3xl font-black text-indigo-600 mt-1">Aktif</h2>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-[350px]">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col">
+                        <h3 class="font-bold text-slate-800 text-sm mb-4">Persentase Kategori Masalah</h3>
+                        <div class="relative w-full flex-1 min-h-[200px]">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col">
+                        <h3 class="font-bold text-slate-800 text-sm mb-4">Tren Laporan Masuk</h3>
+                        <div class="relative w-full flex-1 min-h-[200px]">
+                            <canvas id="trendChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -188,12 +295,11 @@
         </div>
     </main>
 
-    <!-- ================= SCRIPT & FIREBASE ================= -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        // HARUS ADA databaseURL KARENA SERVER ASIA
+        // Konfigurasi Database Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyBvehn92P42G76FyXQ0YnYSL9IKBghM-B8",
             authDomain: "sanad-162000.firebaseapp.com",
@@ -206,140 +312,291 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Sistem Navigasi Tab Admin
-        window.switchTab = (tabId, element) => {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            
-            document.querySelectorAll('.menu-btn').forEach(btn => {
-                btn.classList.remove('bg-emerald-600', 'text-white');
-                btn.classList.add('text-slate-300');
-            });
-            
-            element.classList.remove('text-slate-300');
-            element.classList.add('bg-emerald-600', 'text-white');
-
-            const titles = {
-                'tab-aduan': 'Pusat Resolusi Aduan',
-                'tab-peta': 'Peta Kerawanan Lokasi',
-                'tab-statistik': 'Statistik & Analisis',
-                'tab-pengaturan': 'Pengaturan Sistem'
-            };
-            document.getElementById('header-title').innerText = titles[tabId];
-
-            if(tabId === 'tab-statistik') renderChart();
+        window.login = () => {
+            if(document.getElementById('login-password').value === 'admin123') {
+                document.getElementById('login-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('login-screen').style.display = 'none', 300);
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
         };
 
-        function renderChart() {
-            if(window.myChart) return; // Render sekali saja
-            const ctx = document.getElementById('statChart').getContext('2d');
-            window.myChart = new Chart(ctx, {
+        window.switchTab = (tabId, element) => {
+            ['tab-aduan', 'tab-peta', 'tab-statistik'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('flex');
+            
+            document.querySelectorAll('.menu-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow-lg');
+                btn.classList.add('text-slate-400');
+            });
+            
+            element.classList.remove('text-slate-400');
+            element.classList.add('bg-emerald-600', 'text-white', 'shadow-lg');
+
+            const titles = { 'tab-aduan': 'Pusat Resolusi & AI', 'tab-peta': 'Peta 3D Kerawanan', 'tab-statistik': 'Statistik Komprehensif' };
+            document.getElementById('header-title').innerText = titles[tabId];
+        };
+
+        // ================= LOGIKA PETA 3D INTERAKTIF (DRAG TO ROTATE) =================
+        let isDraggingMap = false;
+        let previousMousePos = { x: 0, y: 0 };
+        let mapRotation = { x: 60, z: -45 }; 
+        const map3dScene = document.getElementById('map-3d-scene');
+        const mapWrapper = document.getElementById('map-wrapper');
+
+        mapWrapper.addEventListener('mousedown', (e) => {
+            isDraggingMap = true;
+            previousMousePos = { x: e.offsetX, y: e.offsetY };
+            map3dScene.style.transition = 'none'; 
+        });
+        mapWrapper.addEventListener('mousemove', (e) => {
+            if (isDraggingMap) {
+                const deltaX = e.offsetX - previousMousePos.x;
+                const deltaY = e.offsetY - previousMousePos.y;
+                
+                mapRotation.z += deltaX * 0.5; 
+                mapRotation.x -= deltaY * 0.5; 
+                mapRotation.x = Math.max(20, Math.min(mapRotation.x, 80));
+                
+                map3dScene.style.transform = `rotateX(${mapRotation.x}deg) rotateZ(${mapRotation.z}deg)`;
+                
+                document.querySelectorAll('.hotspot').forEach(hs => {
+                    hs.style.transform = `translateZ(40px) rotateZ(${-mapRotation.z}deg) rotateX(${-mapRotation.x}deg)`;
+                });
+
+                previousMousePos = { x: e.offsetX, y: e.offsetY };
+            }
+        });
+        window.addEventListener('mouseup', () => { 
+            if(isDraggingMap) {
+                isDraggingMap = false; 
+                map3dScene.style.transition = 'transform 0.2s ease-out';
+            }
+        });
+
+        // ================= CHART.JS =================
+        let catChart, trendChart;
+        function initCharts() {
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            catChart = new Chart(ctxCat, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Perundungan', 'Stres Akademik', 'Fasilitas & Kesehatan', 'Lainnya'],
-                    datasets: [{
-                        data: [12, 7, 4, 3],
-                        backgroundColor: ['#f43f5e', '#f59e0b', '#3b82f6', '#10b981'],
-                        borderWidth: 0
-                    }]
+                    labels: ['Bully', 'Stres', 'Fasilitas', 'Lainnya'],
+                    datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#e11d48', '#f59e0b', '#0ea5e9', '#94a3b8'], borderWidth: 0 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right' } } }
+            });
+
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctxTrend, {
+                type: 'bar',
+                data: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Hari Ini'],
+                    datasets: [{ label: 'Laporan', data: [2, 5, 1, 4, 2, 0, 0], backgroundColor: '#10b981', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
             });
         }
+        initCharts();
 
-        // Sistem Sinkronisasi Chat Admin
+        // ================= FIREBASE SYNC =================
         let aktifAdminPIN = null;
+        let kumpulanChatAktif = ""; 
         const listEl = document.getElementById('admin-laporan-list');
         const box = document.getElementById('admin-chat-box');
-        const input = document.getElementById('admin-input-reply');
-        const btn = document.getElementById('admin-btn-send');
 
-        function formatTime(timestamp) {
-            const d = new Date(timestamp || Date.now());
-            return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-        }
-
-        // Ambil Data Laporan (Realtime)
         onValue(ref(db, 'laporan'), (snapshot) => {
             listEl.innerHTML = '';
+            let stats = { bully: 0, stres: 0, fasilitas: 0, lain: 0 };
+            let total = 0, urgen = 0, respons = 0;
+
             if (!snapshot.exists()) {
                 listEl.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm">Belum ada aduan masuk.</div>';
                 return;
             }
 
-            // Loop database & tampilkan daftar PIN
             snapshot.forEach((childSnap) => {
+                total++;
                 const pin = childSnap.key;
+                let fullText = "";
                 let lastText = "";
                 let lastSender = "";
+                let adaBalasanAdmin = false;
                 
                 childSnap.child('pesan').forEach((msgSnap) => {
-                    lastText = msgSnap.val().text;
-                    lastSender = msgSnap.val().sender;
+                    const m = msgSnap.val();
+                    lastText = m.text;
+                    lastSender = m.sender;
+                    if(m.sender === 'user') fullText += " " + m.text.toLowerCase();
+                    if(m.sender === 'admin') adaBalasanAdmin = true;
                 });
 
-                const isUnread = lastSender === 'user';
-                const preview = lastText.length > 25 ? lastText.substring(0, 25) + "..." : lastText;
+                if(adaBalasanAdmin) respons++;
 
+                if (fullText.includes('pukul') || fullText.includes('bully') || fullText.includes('nakal') || fullText.includes('ejek')) {
+                    stats.bully++; urgen++;
+                } else if (fullText.includes('stres') || fullText.includes('capek') || fullText.includes('pusing') || fullText.includes('hafalan')) {
+                    stats.stres++; urgen++;
+                } else if (fullText.includes('rusak') || fullText.includes('kotor') || fullText.includes('air') || fullText.includes('makan')) {
+                    stats.fasilitas++;
+                } else if (fullText.length > 0) {
+                    stats.lain++;
+                }
+
+                const isUnread = lastSender === 'user';
                 const item = document.createElement('div');
-                item.className = `p-4 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition ${isUnread ? 'bg-amber-50 border-l-4 border-l-amber-500' : ''} ${aktifAdminPIN === pin ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : ''}`;
+                item.className = `p-4 hover:bg-slate-100 cursor-pointer flex justify-between items-center transition border-b border-slate-100 ${aktifAdminPIN === pin ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'border-l-4 border-l-transparent'}`;
                 item.innerHTML = `
-                    <div class="flex-1">
-                        <span class="font-mono font-bold text-slate-800 text-sm block">${pin}</span>
-                        <span class="text-[11px] text-slate-500 italic block mt-0.5">"${preview}"</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono font-bold text-slate-800 text-sm">${pin}</span>
+                            ${isUnread ? '<span class="bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">Baru</span>' : ''}
+                        </div>
+                        <span class="text-[11px] text-slate-500 italic block mt-1 truncate">"${lastText}"</span>
                     </div>
-                    ${isUnread ? '<span class="w-2.5 h-2.5 bg-amber-500 rounded-full shadow-sm ml-2"></span>' : ''}
                 `;
                 item.onclick = () => bukaChatAdmin(pin);
-                listEl.insertBefore(item, listEl.firstChild); // Yang terbaru di atas
+                listEl.insertBefore(item, listEl.firstChild);
             });
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-respons').innerText = respons;
+            document.getElementById('stat-urgen').innerText = urgen;
+            
+            document.getElementById('map-bully-count').innerText = stats.bully;
+            document.getElementById('map-fasilitas-count').innerText = stats.fasilitas;
+            
+            document.getElementById('hotspot-bully').style.display = stats.bully > 0 ? 'flex' : 'none';
+            document.getElementById('hotspot-fasilitas').style.display = stats.fasilitas > 0 ? 'flex' : 'none';
+            
+            catChart.data.datasets[0].data = [stats.bully, stats.stres, stats.fasilitas, stats.lain];
+            catChart.update();
+            trendChart.data.datasets[0].data[6] = total;
+            trendChart.update();
         });
 
         window.bukaChatAdmin = (pin) => {
             aktifAdminPIN = pin;
             document.getElementById('admin-chat-title').innerText = `Santri (${pin})`;
-            document.getElementById('admin-chat-subtitle').innerText = "Privasi Terjaga. Balas dengan santun.";
-            input.disabled = false;
-            btn.disabled = false;
+            document.getElementById('admin-input-reply').disabled = false;
+            document.getElementById('admin-btn-send').disabled = false;
+            document.getElementById('btn-ai').disabled = false;
             
-            // Reload daftar kiri untuk hapus warna "Aktif" sebelumnya dan pasang yang baru
-            document.querySelectorAll('#admin-laporan-list > div').forEach(el => el.classList.remove('bg-indigo-50', 'border-l-indigo-500', 'border-l-4'));
+            document.getElementById('ai-result-panel').classList.add('hidden');
+            
+            document.querySelectorAll('#admin-laporan-list > div').forEach(el => {
+                el.classList.remove('bg-indigo-50', 'border-l-indigo-500');
+                el.classList.add('border-l-transparent');
+            });
 
             onValue(ref(db, `laporan/${pin}/pesan`), (snap) => {
                 box.innerHTML = '';
+                kumpulanChatAktif = ""; 
                 if (!snap.exists()) return;
 
                 snap.forEach((m) => {
                     const val = m.val();
+                    if(val.sender === 'user') kumpulanChatAktif += val.text + ". ";
+
                     const div = document.createElement('div');
-                    
-                    // Admin UI: 'user' kiri (putih), 'admin' kanan (hijau)
                     div.className = val.sender === 'user' ? "flex justify-start" : "flex justify-end";
-                    let bubbleClass = "p-2 px-3 shadow-sm max-w-[80%] ";
+                    let bubbleClass = "p-2 px-3 shadow-sm max-w-[85%] ";
                     
                     if (val.sender === 'user') {
-                        bubbleClass += "bg-white text-gray-800 rounded-lg rounded-tl-none border border-slate-200";
+                        bubbleClass += "bg-white text-gray-800 rounded-xl rounded-tl-none border border-slate-200";
                     } else if (val.sender === 'admin') {
-                        bubbleClass += "bg-[#d9fdd3] text-gray-800 rounded-lg rounded-tr-none";
+                        bubbleClass += "bg-[#d9fdd3] text-gray-800 rounded-xl rounded-tr-none border border-[#c5ebb7]";
                     } else {
-                        div.className = "flex justify-center";
-                        bubbleClass = "bg-[#e1f3fb] text-slate-600 text-[11px] px-3 py-1 rounded-lg text-center max-w-[80%] border border-[#cce8f4]";
+                        div.className = "flex justify-center w-full";
+                        bubbleClass = "bg-[#e1f3fb] text-slate-600 text-[11px] px-4 py-1.5 rounded-lg text-center max-w-[80%] border border-[#cce8f4]";
                     }
 
-                    div.innerHTML = `
-                        <div class="${bubbleClass}">
-                            <p class="text-[14.5px] leading-snug whitespace-pre-wrap">${val.text}</p>
-                            ${val.sender !== 'bot' ? `<div class="text-right mt-1"><span class="text-[10px] text-gray-500">${formatTime(val.timestamp)}</span></div>` : ''}
-                        </div>
-                    `;
+                    const d = new Date(val.timestamp || Date.now());
+                    const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                    
+                    div.innerHTML = `<div class="${bubbleClass}">
+                        <p class="text-[13px] lg:text-[14.5px] leading-relaxed whitespace-pre-wrap">${val.text}</p>
+                        ${val.sender !== 'bot' ? `<div class="text-right mt-1"><span class="text-[10px] text-gray-500">${time}</span></div>` : ''}
+                    </div>`;
                     box.appendChild(div);
                 });
-                box.scrollTop = box.scrollHeight; // Auto scroll ke bawah
+                box.scrollTop = box.scrollHeight;
             });
+        };
+
+        // ================= INTEGRASI GOOGLE GEMINI AI (DENGAN KEY BARU) =================
+        window.analisisDenganGemini = async () => {
+            if (!kumpulanChatAktif || kumpulanChatAktif.trim() === "") {
+                alert("Belum ada pesan dari santri untuk dianalisis.");
+                return;
+            }
+
+            const aiPanel = document.getElementById('ai-result-panel');
+            const aiLoading = document.getElementById('ai-loading');
+            const aiContent = document.getElementById('ai-content');
+            
+            aiPanel.classList.remove('hidden');
+            aiLoading.classList.remove('hidden');
+            aiLoading.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>AI sedang menganalisis percakapan...`;
+            aiContent.classList.add('hidden');
+
+            // MENGGUNAKAN API KEY BARU ANDA (beserta endpoint yang sesuai dengan curl)
+            const apiKey = "AQ.Ab8RN6Ksf70jOups81fw_kIX2VvcpqQ5ojin8oF62fDEFFct8Q"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+            
+            const prompt = `Sebagai pakar psikologi pesantren, analisis pesan santri ini: "${kumpulanChatAktif}". Keluarkan HANYA respons berformat JSON (tanpa tag markdown) dengan struktur persis seperti ini: {"kategori": "nama_kategori_singkat", "tingkat_stres": "Tinggi atau Sedang atau Rendah", "saran": "saran_singkat_2_kalimat"}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                
+                if(!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || "Gagal menghubungi server Google API");
+                }
+                
+                const data = await response.json();
+                
+                let rawText = data.candidates[0].content.parts[0].text;
+                rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+                
+                const jsonResult = JSON.parse(rawText);
+
+                // Tampilkan Hasil
+                let warnaStres = jsonResult.tingkat_stres.toLowerCase().includes('tinggi') ? 'text-rose-600' : 
+                                 jsonResult.tingkat_stres.toLowerCase().includes('sedang') ? 'text-amber-600' : 'text-emerald-600';
+                                 
+                document.getElementById('ai-stres').innerHTML = `<span class="${warnaStres}">${jsonResult.tingkat_stres}</span> - ${jsonResult.kategori}`;
+                document.getElementById('ai-saran').innerText = jsonResult.saran;
+
+                aiLoading.classList.add('hidden');
+                aiContent.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Detail Error AI:", error);
+                
+                // Tampilkan PESAN ERROR ASLI ke layar
+                aiLoading.innerHTML = `<div class="text-rose-600 font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> AI Error:</div>
+                                       <div class="text-xs text-rose-500 bg-rose-50 p-2 rounded border border-rose-200 overflow-x-auto font-mono">${error.message}</div>
+                                       <div class="text-[10px] mt-2 text-slate-500">Info: Jika error menyebutkan kunci tidak valid atau tidak memiliki akses, harap generate API Key yang berawalan "AIzaSy" langsung dari Google AI Studio.</div>`;
+            }
         };
 
         window.kirimBalasanAdmin = () => {
             if (!aktifAdminPIN) return;
+            const input = document.getElementById('admin-input-reply');
             const text = input.value.trim();
             if (!text) return;
             
@@ -349,7 +606,6 @@
                 timestamp: Date.now()
             });
             input.value = '';
-            input.focus();
         };
 
         document.getElementById('admin-input-reply').addEventListener('keypress', function (e) {
